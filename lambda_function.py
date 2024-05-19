@@ -12,8 +12,11 @@ def lambda_handler(event, context):
         uid = os.getenv("STATION_UID")
         password = os.getenv("STATION_API_PASSWORD")
 
-        with open(".timestamp", "r") as f:
-            timestamp = int(f.read())
+        try:
+            with open(f"{os.getenv('WRITE_DIR')}/.timestamp", "r") as f:
+                timestamp = int(f.read())
+        except FileNotFoundError:
+            timestamp = 0
 
         data = get_norden_data()
 
@@ -32,7 +35,7 @@ def lambda_handler(event, context):
             uid, password, data.get("wind"), data.get("gust"), data.get("direction")
         )
 
-        with open(".timestamp", "w") as f:
+        with open(f"{os.getenv('WRITE_DIR')}/.timestamp", "w") as f:
             f.write(str(data.get("timestamp")))
 
         return {

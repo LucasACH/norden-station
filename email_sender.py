@@ -9,9 +9,9 @@ from botocore.exceptions import ClientError
 def send_failure_email(recipient, name):
     client = boto3.client(
         "ses",
-        region_name=os.getenv("AWS_REGION"),
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("SES_REGION"),
+        aws_access_key_id=os.getenv("SES_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("SES_SECRET_ACCESS_KEY"),
     )
 
     stats = client.get_send_statistics()
@@ -21,7 +21,7 @@ def send_failure_email(recipient, name):
 
     time_diff = datetime.now(UTC) - last_datapoint_datetime
 
-    if time_diff > timedelta(seconds=1):
+    if time_diff > timedelta(days=1):
         try:
             response = client.send_templated_email(
                 Source=f"Pilote Norden <{os.getenv("EMAIL_SENDER")}>",
