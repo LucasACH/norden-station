@@ -40,6 +40,3 @@ def get_norden_data():
                 "gust": float(cells[2].text),
                 "direction": float(cells[4].text),
             }
-
-
-print(get_norden_data())
