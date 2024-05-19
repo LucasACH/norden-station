@@ -21,10 +21,10 @@ def send_failure_email(recipient, name):
 
     time_diff = datetime.now(UTC) - last_datapoint_datetime
 
-    if time_diff > timedelta(hours=1):
+    if time_diff > timedelta(seconds=1):
         try:
             response = client.send_templated_email(
-                Source=f"Sender Name <{os.getenv("EMAIL_SENDER")}>",
+                Source=f"Pilote Norden <{os.getenv("EMAIL_SENDER")}>",
                 Template="norden-windguru-station",
                 Destination={"ToAddresses": [recipient]},
                 TemplateData=json.dumps({"name": name}),
