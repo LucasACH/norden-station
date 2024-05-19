@@ -3,6 +3,8 @@ import random
 
 import requests
 
+BASE_URL = "https://www.windguru.cz/"
+
 
 def _generate_hash(uid, password):
     salt = str(random.randint(10000000000000, 90000000000000))
@@ -11,7 +13,6 @@ def _generate_hash(uid, password):
 
 
 def upload_data(uid, password, wind, gust, direction):
-    url = "https://www.windguru.cz/upload/api.php"
 
     salt, hash = _generate_hash(uid, password)
 
@@ -25,7 +26,19 @@ def upload_data(uid, password, wind, gust, direction):
         "wind_direction": direction,
     }
 
-    res = requests.get(url, params=params)
+    res = requests.get(BASE_URL + "upload/api.php", params=params)
 
     if res.text != "OK":
         raise Exception("Failed to upload data to Windguru")
+
+
+def get_station_current_data(uid, password):
+    params = {
+        "uid": uid,
+        "password": password,
+        "q": "station_data_current",
+    }
+
+    res = requests.get(BASE_URL + "int/wgsapi.php", params=params)
+
+    return res.json()

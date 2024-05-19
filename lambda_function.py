@@ -4,7 +4,7 @@ from datetime import datetime
 
 from email_sender import send_failure_email
 from norden import get_norden_data
-from windguru import upload_data
+from windguru import get_station_current_data, upload_data
 
 
 def lambda_handler(event, context):
@@ -12,15 +12,13 @@ def lambda_handler(event, context):
         uid = os.getenv("STATION_UID")
         password = os.getenv("STATION_API_PASSWORD")
 
-        try:
-            with open(f"{os.getenv('WRITE_DIR')}/.timestamp", "r") as f:
-                timestamp = int(f.read())
-        except FileNotFoundError:
-            timestamp = 0
-
         data = get_norden_data()
 
-        if data.get("timestamp") == timestamp:
+        timestamp = data.get("timestamp")
+
+        station_data = get_station_current_data(uid, password)
+
+        if timestamp < station_data.get("unixtime"):
             return {
                 "statusCode": 200,
                 "body": json.dumps(
@@ -34,9 +32,6 @@ def lambda_handler(event, context):
         upload_data(
             uid, password, data.get("wind"), data.get("gust"), data.get("direction")
         )
-
-        with open(f"{os.getenv('WRITE_DIR')}/.timestamp", "w") as f:
-            f.write(str(data.get("timestamp")))
 
         return {
             "statusCode": 200,
