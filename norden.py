@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import unquote
 
 import requests
@@ -35,7 +35,9 @@ def get_norden_data():
         cells = row.find_all("td")
         if cells:
             return {
-                "timestamp": int(datetime.fromisoformat(cells[0].text).timestamp()),
+                "timestamp": int(
+                    datetime.fromisoformat(cells[0].text + "-03:00").timestamp()
+                ),
                 "wind": float(cells[1].text),
                 "gust": float(cells[2].text),
                 "direction": float(cells[4].text),
