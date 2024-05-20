@@ -1,10 +1,16 @@
 import json
 import os
-from datetime import datetime
 
 from email_sender import send_failure_email
 from norden import get_norden_data
 from windguru import get_station_current_data, upload_data
+
+
+def execution_response(status_code, message):
+    return {
+        "statusCode": status_code,
+        "body": json.dumps({"status": "success", "message": message}),
+    }
 
 
 def lambda_handler(event, context):
@@ -14,40 +20,21 @@ def lambda_handler(event, context):
 
         data = get_norden_data()
 
-        timestamp = data.get("timestamp")
+        timestamp, wind, gust, direction = data
 
         station_data = get_station_current_data(uid, password)
 
         if timestamp < station_data.get("unixtime"):
-            return {
-                "statusCode": 200,
-                "body": json.dumps(
-                    {
-                        "status": "success",
-                        "message": f"No new data since {datetime.fromtimestamp(timestamp)}",
-                    }
-                ),
-            }
+            return execution_response(200, "Data is up to date")
 
-        upload_data(
-            uid, password, data.get("wind"), data.get("gust"), data.get("direction")
-        )
+        upload_data(uid, password, wind, gust, direction)
 
-        with open(f"{os.getenv('WRITE_DIR')}/.timestamp", "w") as f:
-            f.write(str(data.get("timestamp")))
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps(
-                {"status": "success", "message": "Data uploaded successfully"}
-            ),
-        }
+        return execution_response(200, "Data uploaded successfully")
 
     except Exception as e:
-        send_failure_email(os.getenv("EMAIL_RECIPIENT"), os.getenv("RECIPIENT_NAME"))
-        return {
-            "statusCode": 500,
-            "body": json.dumps(
-                {"status": "error", "message": f"Failed to upload data: {str(e)}"}
-            ),
-        }
+        with open("recipients.txt") as f:
+            recipients = f.read().splitlines()
+
+        send_failure_email(recipients, str(e))
+
+        return execution_response(500, f"Failed to upload data: {str(e)}")
