@@ -1,19 +1,20 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from urllib.parse import unquote
 
 import requests
 from bs4 import BeautifulSoup
 
+BASE_URL = "http://meteo.comisionriodelaplata.org"
+
 
 def get_norden_data():
     session = requests.Session()
 
-    url = "http://meteo.comisionriodelaplata.org"
+    # Get the main page to get the session cookie
+    session.get(BASE_URL)
 
-    session.get(url)
-
-    endpoint = f"{url}/ecsCommand.php"
+    endpoint = BASE_URL + "/ecsCommand.php"
 
     data = "p=1&p1=2&p2=1&p3=1"
 
@@ -23,6 +24,7 @@ def get_norden_data():
 
     res = session.post(endpoint, data=data, params=params, headers=headers)
 
+    # Remove the prefix from the response
     data = json.loads(res.text.split("|JSON**")[-1])
 
     table = unquote(data.get("wind").get("latest"))
@@ -34,44 +36,12 @@ def get_norden_data():
     for row in rows:
         cells = row.find_all("td")
         if cells:
-            return {
-                "timestamp": int(
-                    datetime.fromisoformat(cells[0].text + "-03:00").timestamp()
-                ),
-                "wind": float(cells[1].text),
-                "gust": float(cells[2].text),
-                "direction": float(cells[4].text),
-            }
+            # Add the timezone offset to the date string
+            date_string = cells[0].text + "-03:00"
 
-
-data = [
-    [1716117840000, "8.97"],
-    [1716120000000, "9.01"],
-    [1716121080000, "9.31"],
-    [1716121440000, "8.88"],
-    [1716136200000, "1.70"],
-    [1716144840000, "3.04"],
-    [1716148080000, "2.17"],
-    [1716151320000, "0.61"],
-    [1716152400000, "0.22"],
-    [1716152760000, "1.27"],
-    [1716153480000, "1.10"],
-    [1716155280000, "0.46"],
-    [1716157800000, "3.56"],
-    [1716172200000, "9.83"],
-    [1716175440000, "11.28"],
-    [1716180120000, "12.23"],
-    [1716180480000, "11.84"],
-    [1716181560000, "11.91"],
-    [1716181920000, "11.39"],
-    [1716183720000, "12.37"],
-    [1716185160000, "13.70"],
-    [1716186600000, "14.07"],
-    [1716193800000, "13.84"],
-    [1716196320000, "14.30"],
-    [1716199560000, "14.97"],
-    [1716199920000, "15.94"],
-]
-
-for d in data:
-    print(datetime.fromtimestamp(d[0] / 1000))
+            return [
+                int(datetime.fromisoformat(date_string).timestamp()),
+                float(cells[1].text),
+                float(cells[2].text),
+                float(cells[4].text),
+            ]
