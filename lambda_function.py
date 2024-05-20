@@ -33,6 +33,9 @@ def lambda_handler(event, context):
             uid, password, data.get("wind"), data.get("gust"), data.get("direction")
         )
 
+        with open(f"{os.getenv('WRITE_DIR')}/.timestamp", "w") as f:
+            f.write(str(data.get("timestamp")))
+
         return {
             "statusCode": 200,
             "body": json.dumps(
