@@ -1,22 +1,17 @@
 import json
-import os
+import logging
 from datetime import UTC, datetime, timedelta
 
 import boto3
 from botocore.exceptions import ClientError
 
 
-def send_failure_email(recipients, exception):
-    client = boto3.client(
-        "ses",
-        region_name=os.getenv("SES_REGION"),
-        aws_access_key_id=os.getenv("SES_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("SES_SECRET_ACCESS_KEY"),
-    )
+def send_failure_email(
+    sender, recipients, exception, template_name="norden-station-failure"
+):
+    client = boto3.client("ses")
 
     templates = client.list_templates()["TemplatesMetadata"]
-
-    template_name = os.getenv("EMAIL_TEMPLATE_NAME")
 
     for t in templates:
         if t["Name"] == template_name:
@@ -49,15 +44,13 @@ def send_failure_email(recipients, exception):
     if time_diff > timedelta(days=1):
         try:
             response = client.send_templated_email(
-                Source=f"Pilote Norden <{os.getenv("EMAIL_SENDER")}>",
-                Template=os.getenv("EMAIL_TEMPLATE_NAME"),
+                Source=f"Pilote Norden <{sender}>",
+                Template=template_name,
                 Destination={"ToAddresses": recipients},
                 TemplateData=json.dumps({"exception": exception}),
             )
 
         except ClientError as e:
-            print(e.response["Error"]["Message"])
+            logging.error(e.response["Error"]["Message"])
         else:
-            print("Email sent! Message ID:"),
-            print(response["MessageId"])
-
+            logging.info(f"Email sent! Message ID: {response['MessageId']}")
